@@ -38,27 +38,20 @@ func NewServer(config *Config) (*Server, error) {
 	}, nil
 }
 
-func NewChannel(idChannel int) *Channel {
-	return &Channel{
+func NewChannel(idChannel int, c chan<- *Channel) {
+	c <- &Channel{
 		Id:      int16(idChannel),
 		Clients: make(map[int][]chan client.Client),
 	}
 }
 
 func CreateChannels(NChannels int) []Channel {
-	// c := make([]chan *Channel, NChannels)
-	// var channels []Channel
-	// for i := 0; i < NChannels; i++ {
+	c := make([]chan *Channel, NChannels)
 
-	// 	go NewChannel(i, c[i])
-	// 	channel := <-c[i]
-	// 	channels = append(channels, *channel)
-	// }
-	// return channels
 	var channels []Channel
 	for i := 0; i < NChannels; i++ {
-
-		channel := NewChannel(i)
+		go NewChannel(i, c[i])
+		channel := <-c[i]
 		channels = append(channels, *channel)
 	}
 	return channels
