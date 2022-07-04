@@ -2,7 +2,6 @@ package server
 
 import (
 	"errors"
-	"log"
 
 	"github.com/jcamiloguz/goftp/internal/client"
 )
@@ -39,11 +38,11 @@ func NewServer(config *Config) (*Server, error) {
 	}, nil
 }
 
-func NewChannel(idChannel int) (*Channel, error) {
+func NewChannel(idChannel int) *Channel {
 	return &Channel{
 		Id:      int16(idChannel),
 		Clients: make(map[int][]chan client.Client),
-	}, nil
+	}
 }
 
 func CreateChannels(NChannels int) []Channel {
@@ -59,11 +58,7 @@ func CreateChannels(NChannels int) []Channel {
 	var channels []Channel
 	for i := 0; i < NChannels; i++ {
 
-		channel, err := NewChannel(i)
-		if err != nil {
-			log.Printf("Channel %d could not be created", i)
-		}
-
+		channel := NewChannel(i)
 		channels = append(channels, *channel)
 	}
 	return channels

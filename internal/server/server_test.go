@@ -16,7 +16,7 @@ func TestNewServer(t *testing.T) {
 	}{
 		{"localhost", "", 0},
 		{"localhost", "8080", 2},
-		{"localhost", "8080", 1},
+		{"localhost", "8080", 0},
 		{"localhost", "8080", 100},
 		{"", "8080", 100},
 	}
