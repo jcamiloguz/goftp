@@ -1,7 +1,7 @@
 # Things to do
 
-- [ ] Define Protocol
-- [ ] Define design pattern
+- [x] Define Protocol
+- [x] Define design pattern(Observer)
 - [ ] Develop basic Tcp server
 - [ ] Send file Tcp server
 - [ ] Define file manage: Use ¿Buffer, mutiple channels, Waitgroups, Workers, Queue?
