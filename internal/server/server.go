@@ -46,9 +46,12 @@ func NewServer(config *Config) (*Server, error) {
 
 func CreateChannels(NChannels int) map[int]*channel.Channel {
 	channels := make(map[int]*channel.Channel)
-	for i := 0; i < NChannels; i++ {
+	for i := 1; i <= NChannels; i++ {
 
-		channel := channel.NewChannel(i)
+		channel, err := channel.NewChannel(i)
+		if err != nil {
+			log.Println(err)
+		}
 		channels[i] = channel
 	}
 	return channels

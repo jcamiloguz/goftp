@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"net"
 	"time"
 )
@@ -22,7 +23,20 @@ type Client struct {
 	Deregister    chan<- *Client
 }
 
-func NewClient(conn net.Conn, username string, role ROLE, register chan<- *Client, deregister chan<- *Client) *Client {
+func NewClient(conn net.Conn, username string, role ROLE, register chan<- *Client, deregister chan<- *Client) (*Client, error) {
+	if conn == nil {
+		return nil, errors.New("connection is required")
+	}
+	if username == "" {
+		return nil, errors.New("username is required")
+	}
+	if register == nil {
+		return nil, errors.New("register is required")
+	}
+	if deregister == nil {
+		return nil, errors.New("deregister is required")
+	}
+
 	return &Client{
 		Username:      username,
 		Role:          role,
@@ -30,5 +44,5 @@ func NewClient(conn net.Conn, username string, role ROLE, register chan<- *Clien
 		StartConnTime: time.Now(),
 		Register:      register,
 		Deregister:    deregister,
-	}
+	}, nil
 }

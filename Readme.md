@@ -4,8 +4,11 @@
 
 | Action      | Description                                         | Parameters |
 | ----------- | -----------                                         | ---------  |
+| REG         | Action to send/publish a file to a specific channel | Channel, Content(File)    |
+| UNREG         | Action to send/publish a file to a specific channel | Channel, Content(File)    |
 | PUB         | Action to send/publish a file to a specific channel | Channel, Content(File)    |
 | SUB         | Action for subscribe to a specific channel          | Channel    |
+| UNSUB         | Action for unsubscribe to a specific channel          |      |
 
 ## Status Codes
 

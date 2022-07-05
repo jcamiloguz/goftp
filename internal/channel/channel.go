@@ -1,17 +1,25 @@
 package channel
 
-import "github.com/jcamiloguz/goftp/internal/client"
+import (
+	"errors"
+
+	"github.com/jcamiloguz/goftp/internal/client"
+)
 
 type Channel struct {
 	Id      int16
 	Clients map[int]client.Client
 }
 
-func NewChannel(idChannel int) *Channel {
+func NewChannel(idChannel int) (*Channel, error) {
+	if idChannel < 1 {
+		return nil, errors.New("idChannel is required")
+	}
+
 	return &Channel{
 		Id:      int16(idChannel),
 		Clients: make(map[int]client.Client),
-	}
+	}, nil
 }
 func (c *Channel) broadcast(s string, m []byte) {
 	msg := append([]byte(s), ": "...)
