@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
 
@@ -9,7 +10,7 @@ import (
 )
 
 var (
-	nChannels int
+	nChannels = flag.Int("nchannels", 3, "Number of channels")
 )
 
 func main() {
@@ -19,7 +20,6 @@ func main() {
 	}
 	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
-	nChannels = 3
 
 	s, err := server.NewServer(&server.Config{
 		Host:      host,
@@ -29,6 +29,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	s.Start()
 	log.Printf("Server started #%d channels", len(s.Channels))
 
 }

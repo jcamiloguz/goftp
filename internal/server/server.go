@@ -2,7 +2,11 @@ package server
 
 import (
 	"errors"
+	"fmt"
+	"log"
+	"net"
 
+	"github.com/jcamiloguz/goftp/internal/channel"
 	"github.com/jcamiloguz/goftp/internal/client"
 )
 
@@ -13,12 +17,14 @@ type Config struct {
 }
 
 type Server struct {
-	Config   *Config
-	Channels []Channel
-}
-type Channel struct {
-	Id      int16
-	Clients map[int][]chan client.Client
+	Config          *Config
+	Channels        map[int]*channel.Channel
+	Clients         map[string]*client.Client
+	Actions         chan *client.Client
+	Login           chan *client.Client
+	Logout          chan *client.Client
+	Registrations   chan *client.Client
+	DeRegistrations chan *client.Client
 }
 
 func NewServer(config *Config) (*Server, error) {
@@ -38,21 +44,31 @@ func NewServer(config *Config) (*Server, error) {
 	}, nil
 }
 
-func NewChannel(idChannel int) *Channel {
-	return &Channel{
-		Id:      int16(idChannel),
-		Clients: make(map[int][]chan client.Client),
-	}
-}
-
-func CreateChannels(NChannels int) []Channel {
-	var channels []Channel
+func CreateChannels(NChannels int) map[int]*channel.Channel {
+	channels := make(map[int]*channel.Channel)
 	for i := 0; i < NChannels; i++ {
 
-		channel := NewChannel(i)
-
-		channels = append(channels, *channel)
+		channel := channel.NewChannel(i)
+		channels[i] = channel
 	}
 	return channels
+
+}
+func (s *Server) handleConnection(conn net.Conn) {
+
+}
+
+func (s *Server) Start() {
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", s.Config.Host, s.Config.Port))
+	if err != nil {
+		log.Fatal(err)
+	}
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+		go s.handleConnection(conn)
+	}
 
 }
