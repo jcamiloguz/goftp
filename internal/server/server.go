@@ -67,25 +67,6 @@ func CreateChannels(NChannels int) map[int]*channel.Channel {
 	return channels
 
 }
-func (s *Server) handleConnection(conn net.Conn) {
-
-	defer conn.Close()
-	clientName := conn.RemoteAddr().String()
-	log.Printf("New Client %s connected", clientName)
-
-	_, err := client.NewClient(conn, clientName, s.Registrations, s.DeRegistrations)
-	if err != nil {
-		log.Println(err)
-	}
-	for {
-		// message, err := client.Connection.Read
-		// if err != nil {
-		// 	log.Println(err)
-		// }
-		// fmt.Println(message)
-	}
-
-}
 
 func (s *Server) Start() {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", s.Config.Host, s.Config.Port))
