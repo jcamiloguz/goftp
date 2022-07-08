@@ -16,6 +16,10 @@ type Config struct {
 	NChannels int
 }
 
+type Header struct {
+	Action string
+}
+
 type Server struct {
 	Config          *Config
 	Channels        map[int]*channel.Channel
@@ -39,8 +43,14 @@ func NewServer(config *Config) (*Server, error) {
 	}
 	channels := CreateChannels(config.NChannels)
 	return &Server{
-		Config:   config,
-		Channels: channels,
+		Config:          config,
+		Channels:        channels,
+		Clients:         make(map[string]*client.Client),
+		Actions:         make(chan *client.Client),
+		Login:           make(chan *client.Client),
+		Logout:          make(chan *client.Client),
+		Registrations:   make(chan *client.Client),
+		DeRegistrations: make(chan *client.Client),
 	}, nil
 }
 
@@ -59,6 +69,22 @@ func CreateChannels(NChannels int) map[int]*channel.Channel {
 }
 func (s *Server) handleConnection(conn net.Conn) {
 
+	defer conn.Close()
+	clientName := conn.RemoteAddr().String()
+	log.Printf("New Client %s connected", clientName)
+
+	_, err := client.NewClient(conn, clientName, s.Registrations, s.DeRegistrations)
+	if err != nil {
+		log.Println(err)
+	}
+	for {
+		// message, err := client.Connection.Read
+		// if err != nil {
+		// 	log.Println(err)
+		// }
+		// fmt.Println(message)
+	}
+
 }
 
 func (s *Server) Start() {
@@ -66,12 +92,19 @@ func (s *Server) Start() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer listener.Close()
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
-		go s.handleConnection(conn)
+
+		client, err := client.NewClient(conn, conn.RemoteAddr().String(), s.Registrations, s.DeRegistrations)
+		if err != nil {
+			log.Println(err)
+		}
+
+		go client.Read()
 	}
 
 }

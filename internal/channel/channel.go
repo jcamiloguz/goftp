@@ -2,6 +2,7 @@ package channel
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/jcamiloguz/goftp/internal/client"
 )
@@ -21,13 +22,21 @@ func NewChannel(idChannel int) (*Channel, error) {
 		Clients: make(map[int]client.Client),
 	}, nil
 }
-func (c *Channel) broadcast(s string, m []byte) {
-	msg := append([]byte(s), ": "...)
-	msg = append(msg, m...)
-	msg = append(msg, '\n')
+
+func (c *Channel) Broadcast(username string, content []byte) error {
+
+	if username == "" {
+		return errors.New("username is required")
+	}
+	if content == nil {
+		return errors.New("content is required")
+	}
+
+	msg := []byte(fmt.Sprintf("%s: %s\n", username, content))
 
 	for _, cl := range c.Clients {
 		conn := cl.Connection
 		conn.Write(msg)
 	}
+	return nil
 }

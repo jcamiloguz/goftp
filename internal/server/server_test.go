@@ -38,6 +38,22 @@ func TestNewServer(t *testing.T) {
 			if len(server.Channels) != item.nChannels {
 				t.Errorf("expected %d channels, got %d", item.nChannels, len(server.Channels))
 			}
+			if len(server.Clients) != 0 {
+				t.Errorf("expected 0 clients, got %d", len(server.Clients))
+			}
+			if server.Registrations == nil {
+				t.Errorf("expected nil, got %v", server.Registrations)
+			}
+			if server.DeRegistrations == nil {
+				t.Errorf("expected nil, got %v", server.DeRegistrations)
+			}
+			if server.Login == nil {
+				t.Errorf("expected nil, got %v", server.Login)
+			}
+			if server.Logout == nil {
+				t.Errorf("expected nil, got %v", server.Logout)
+			}
+
 		}
 
 	}
