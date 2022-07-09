@@ -44,9 +44,6 @@ func TestNewServer(t *testing.T) {
 			if server.Actions == nil {
 				t.Errorf("expected nil, got %v", server.Actions)
 			}
-
 		}
-
 	}
-
 }

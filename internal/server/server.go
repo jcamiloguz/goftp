@@ -136,11 +136,20 @@ func (s *Server) unsubscribe(clientToUnsubscribe *client.Client) {
 func (s *Server) publish(clientToPublish *client.Client, channelId int, payload []byte) {
 	if _, exists := s.Clients[clientToPublish.Id]; exists {
 		if _, exists := s.Channels[channelId]; exists {
-			s.Channels[channelId].Broadcast(clientToPublish.Username, payload)
+			s.Channels[channelId].Broadcast(clientToPublish, payload)
 		} else {
 			clientToPublish.Connection.Write([]byte("ERR error channel does not exist\n"))
 		}
 	} else {
 		clientToPublish.Connection.Write([]byte("ERR error you are not logged\n"))
 	}
+}
+
+func (s *Server) SendSuccesful(client *client.Client) {
+	client.Connection.Write([]byte("OK\n"))
+}
+
+func (s *Server) SendError(client *client.Client, err error) {
+	errorMsg := fmt.Sprintf("ERR error: %s\n", err.Error())
+	client.Connection.Write([]byte(errorMsg))
 }

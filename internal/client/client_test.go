@@ -61,20 +61,6 @@ func TestNewClient(t *testing.T) {
 
 func TestHandle(t *testing.T) {
 
-	serverMock, connMock := net.Pipe()
-	defer serverMock.Close()
-	defer connMock.Close()
-
-	s, err := server.NewServer(&server.Config{
-		Host:      "localhost",
-		Port:      "3090",
-		NChannels: 3,
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	clientTest, _ := client.NewClient(connMock, "TestName", s.Actions)
 	// Test Cases
 	tables := []struct {
 		msg    []byte
@@ -85,11 +71,25 @@ func TestHandle(t *testing.T) {
 		{[]byte("out\n"), client.OUT},
 		{[]byte("publish\n"), client.PUB},
 		{[]byte("subscribe\n"), client.SUB},
+		{[]byte("subscribe channel=1\n"), client.SUB},
 		{[]byte("unsubscribe\n"), client.UNSUB},
 		{[]byte("\n"), client.ERR},
 	}
 
 	for _, item := range tables {
+		serverMock, connMock := net.Pipe()
+		defer serverMock.Close()
+		defer connMock.Close()
+
+		s, err := server.NewServer(&server.Config{
+			Host:      "localhost",
+			Port:      "3090",
+			NChannels: 3,
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		clientTest, _ := client.NewClient(connMock, "TestName", s.Actions)
 
 		defer serverMock.Close()
 		wg := sync.WaitGroup{}

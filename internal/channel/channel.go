@@ -1,8 +1,11 @@
 package channel
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"io"
+	"net"
 
 	"github.com/jcamiloguz/goftp/internal/client"
 )
@@ -23,20 +26,47 @@ func NewChannel(idChannel int) (*Channel, error) {
 	}, nil
 }
 
-func (c *Channel) Broadcast(username string, content []byte) error {
+func (c *Channel) Broadcast(sender *client.Client, content []byte) error {
 
-	if username == "" {
-		return errors.New("username is required")
+	if sender == nil {
+		return errors.New("sender is required")
 	}
 	if content == nil {
 		return errors.New("content is required")
 	}
 
-	msg := []byte(fmt.Sprintf("%s: %s\n", username, content))
+	msg := []byte(fmt.Sprintf("%s: %s\n", sender.Username, content))
 
 	for _, cl := range c.Clients {
 		conn := cl.Connection
-		conn.Write(msg)
+		_, err := conn.Write(msg)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+func (c *Channel) SendFile(publisher net.Conn, Subscriber net.Conn) error {
+	if publisher == nil {
+		return errors.New("publisher is required")
+	}
+	if Subscriber == nil {
+		return errors.New("Subscriber is required")
+	}
+
+	for {
+		msg, err := bufio.NewReader(publisher).ReadBytes('\n')
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+
+		_, err = Subscriber.Write(msg)
+		if err != nil {
+			return err
+		}
+	}
 }
