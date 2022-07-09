@@ -9,7 +9,7 @@ import (
 
 type Channel struct {
 	Id      int16
-	Clients map[int]client.Client
+	Clients map[string]*client.Client
 }
 
 func NewChannel(idChannel int) (*Channel, error) {
@@ -19,7 +19,7 @@ func NewChannel(idChannel int) (*Channel, error) {
 
 	return &Channel{
 		Id:      int16(idChannel),
-		Clients: make(map[int]client.Client),
+		Clients: make(map[string]*client.Client),
 	}, nil
 }
 

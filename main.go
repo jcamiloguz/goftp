@@ -2,9 +2,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
+	"net"
 	"os"
 
+	"github.com/jcamiloguz/goftp/internal/client"
 	"github.com/jcamiloguz/goftp/internal/server"
 	"github.com/joho/godotenv"
 )
@@ -29,7 +32,25 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	s.Start()
-	log.Printf("Server started #%d channels", len(s.Channels))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", s.Config.Host, s.Config.Port))
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	defer listener.Close()
+	go s.Start()
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Println(err)
+		}
+
+		client, err := client.NewClient(conn, conn.RemoteAddr().String(), s.Actions)
+		if err != nil {
+			log.Println(err)
+		}
+
+		go client.Read()
+	}
 }
