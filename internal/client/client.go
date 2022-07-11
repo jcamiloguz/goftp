@@ -63,6 +63,7 @@ func (c *Client) Handle(message []byte) {
 		if bytes.Contains(arg, []byte("=")) {
 			key := bytes.Split(arg, []byte("="))[0]
 			value := bytes.Split(arg, []byte("="))[1]
+			value = bytes.TrimSpace(value)
 			args[string(key)] = string(value)
 		}
 	}

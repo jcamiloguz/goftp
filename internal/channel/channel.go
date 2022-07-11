@@ -1,11 +1,9 @@
 package channel
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
-	"net"
 
 	"github.com/jcamiloguz/goftp/internal/client"
 )
@@ -26,47 +24,35 @@ func NewChannel(idChannel int) (*Channel, error) {
 	}, nil
 }
 
-func (c *Channel) Broadcast(sender *client.Client, content []byte) error {
-
-	if sender == nil {
-		return errors.New("sender is required")
-	}
-	if content == nil {
-		return errors.New("content is required")
-	}
-
-	msg := []byte(fmt.Sprintf("%s: %s\n", sender.Username, content))
-
-	for _, cl := range c.Clients {
-		conn := cl.Connection
-		_, err := conn.Write(msg)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c *Channel) SendFile(publisher net.Conn, Subscriber net.Conn) error {
+func (c *Channel) Broadcast(publisher *client.Client) error {
 	if publisher == nil {
 		return errors.New("publisher is required")
 	}
-	if Subscriber == nil {
-		return errors.New("Subscriber is required")
-	}
 
 	for {
-		msg, err := bufio.NewReader(publisher).ReadBytes('\n')
-		if err == io.EOF {
-			return nil
-		}
+		buf := make([]byte, 4096)
+		n, err := publisher.Connection.Read(buf)
 		if err != nil {
 			return err
 		}
 
-		_, err = Subscriber.Write(msg)
-		if err != nil {
-			return err
+		for _, cl := range c.Clients {
+			for {
+				conn := cl.Connection
+				_, err := conn.Write(buf[:n])
+
+				if err != nil {
+					if err == io.EOF {
+						fmt.Printf("receive file complete. \n")
+						break
+					} else {
+						fmt.Printf("conn.read() method execution error, error is:% v \n", err)
+						break
+					}
+				}
+			}
+
 		}
 	}
+
 }

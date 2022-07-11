@@ -23,6 +23,11 @@ type Server struct {
 	Actions  chan *client.Action
 }
 
+type File struct {
+	Name string
+	Size int
+}
+
 func NewServer(config *Config) (*Server, error) {
 	if config.Host == "" {
 		return nil, errors.New("host  is required")
@@ -69,16 +74,35 @@ func (s *Server) Start() {
 			s.logout(actionToExc.Client)
 
 		case client.PUB:
-			channel, err := strconv.Atoi(actionToExc.Args["channel"])
-			if err != nil {
+
+			fmt.Println("Args: ", actionToExc.Args)
+			channel := actionToExc.Args["channel"]
+			if channel == "" {
 				actionToExc.Client.Connection.Write([]byte("ERR error channel is required\n"))
 				break
 			}
-			s.publish(actionToExc.Client, channel, actionToExc.Payload)
+			fileName := actionToExc.Args["fileName"]
+			if fileName == "" {
+				actionToExc.Client.Connection.Write([]byte("ERR error file is required\n"))
+				break
+			}
+			sizeRaw := actionToExc.Args["size"]
+			if sizeRaw == "" {
+				actionToExc.Client.Connection.Write([]byte("ERR error file is required\n"))
+				break
+			}
+			size, err := strconv.Atoi(sizeRaw)
+			if err != nil {
+				actionToExc.Client.Connection.Write([]byte("ERR error size is required\n"))
+				break
+			}
+			s.publish(actionToExc.Client, channel, &File{Name: fileName, Size: size})
 
 		case client.SUB:
-			channel, err := strconv.Atoi(actionToExc.Args["channel"])
-			if err != nil {
+			// log args
+			fmt.Println("Args: ", actionToExc.Args)
+			channel := actionToExc.Args["channel"]
+			if channel == "" {
 				actionToExc.Client.Connection.Write([]byte("ERR error channel is required\n"))
 				break
 			}
@@ -96,10 +120,10 @@ func (s *Server) Start() {
 }
 func (s *Server) register(newClient *client.Client) {
 	if _, exists := s.Clients[newClient.Id]; exists {
-		newClient.Connection.Write([]byte("ERR error you already logged\n"))
+		s.SendError(newClient, errors.New("you are already logged"))
 	} else {
 		s.Clients[newClient.Id] = newClient
-		newClient.Connection.Write([]byte("OK\n"))
+		s.SendSuccesful(newClient)
 	}
 }
 
@@ -112,16 +136,23 @@ func (s *Server) logout(clientToLogout *client.Client) {
 	}
 }
 
-func (s *Server) subscribe(clientToSubscribe *client.Client, channelId int) {
+func (s *Server) subscribe(clientToSubscribe *client.Client, channel string) {
+	channelId, err := strconv.Atoi(channel)
+	if err != nil {
+		fmt.Printf("error: %s\n", err.Error())
+		return
+	}
+
 	if _, exists := s.Clients[clientToSubscribe.Id]; exists {
 		if _, exists := s.Channels[channelId]; exists {
 			s.Channels[channelId].Clients[clientToSubscribe.Id] = clientToSubscribe
-			clientToSubscribe.Connection.Write([]byte("OK\n"))
+			s.SendSuccesful(clientToSubscribe)
 		} else {
-			clientToSubscribe.Connection.Write([]byte("ERR error channel does not exist\n"))
+			s.SendError(clientToSubscribe, errors.New("error channel does not exist"))
 		}
 	} else {
-		clientToSubscribe.Connection.Write([]byte("ERR error you are not logged\n"))
+		s.SendError(clientToSubscribe, errors.New("error you are not logged"))
+
 	}
 }
 
@@ -133,15 +164,22 @@ func (s *Server) unsubscribe(clientToUnsubscribe *client.Client) {
 	}
 }
 
-func (s *Server) publish(clientToPublish *client.Client, channelId int, payload []byte) {
-	if _, exists := s.Clients[clientToPublish.Id]; exists {
+func (s *Server) publish(publisher *client.Client, channel string, file *File) {
+	channelId, err := strconv.Atoi(channel)
+	if err != nil {
+		fmt.Printf("error: %s\n", err.Error())
+		return
+	}
+
+	if _, exists := s.Clients[publisher.Id]; exists {
 		if _, exists := s.Channels[channelId]; exists {
-			s.Channels[channelId].Broadcast(clientToPublish, payload)
+			s.SendSuccesful(publisher)
+			s.Channels[channelId].Broadcast(publisher)
 		} else {
-			clientToPublish.Connection.Write([]byte("ERR error channel does not exist\n"))
+			s.SendError(publisher, errors.New("error channel does not exist"))
 		}
 	} else {
-		clientToPublish.Connection.Write([]byte("ERR error you are not logged\n"))
+		s.SendError(publisher, errors.New("error you are not logged"))
 	}
 }
 
