@@ -2,8 +2,8 @@ package client
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"time"
@@ -11,34 +11,35 @@ import (
 
 type Client struct {
 	Id            string
-	Username      string
 	Connection    net.Conn
 	StartConnTime time.Time
 	EndConnTime   time.Time
 	Action        chan *Action
+	Response      chan *Action
 }
 
-func NewClient(conn net.Conn, username string, actions chan *Action) (*Client, error) {
+func NewClient(conn net.Conn, actions chan *Action, responses chan *Action) (*Client, error) {
 	if conn == nil {
 		return nil, errors.New("connection is required")
-	}
-	if username == "" {
-		return nil, errors.New("username is required")
 	}
 	if actions == nil {
 		return nil, errors.New("register is required")
 	}
+	if responses == nil {
+		return nil, errors.New("response is required")
+	}
 
 	return &Client{
 		Id:            conn.RemoteAddr().String(),
-		Username:      username,
 		Connection:    conn,
 		StartConnTime: time.Now(),
 		Action:        actions,
+		Response:      responses,
 	}, nil
 }
 
 func (c *Client) Read() error {
+	fmt.Printf("client: %v\n", c.Id)
 
 	for {
 		msg, err := bufio.NewReader(c.Connection).ReadBytes('\n')
@@ -56,21 +57,19 @@ func (c *Client) Read() error {
 }
 
 func (c *Client) Handle(message []byte) {
-	cmd := bytes.ToLower(bytes.TrimSpace(bytes.Split(message, []byte(" "))[0]))
-	// get args from message and convert to map
-	args := make(map[string]string)
-	for _, arg := range bytes.Split(message, []byte(" "))[1:] {
-		if bytes.Contains(arg, []byte("=")) {
-			key := bytes.Split(arg, []byte("="))[0]
-			value := bytes.Split(arg, []byte("="))[1]
-			value = bytes.TrimSpace(value)
-			args[string(key)] = string(value)
-		}
+	action, err := NewAction(message, c)
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		return
 	}
-	payload := bytes.TrimSpace(bytes.Split(message, []byte(" "))[len(bytes.Split(message, []byte(" ")))-1])
-
-	action := NewAction(string(cmd), c, args, payload)
 
 	c.Action <- action
+	if action.Id == PUB {
+		//wait fot 2 responses: header and file
+		<-c.Response
+		<-c.Response
+	}
+
+	<-c.Response
 
 }

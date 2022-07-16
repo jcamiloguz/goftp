@@ -46,11 +46,11 @@ func main() {
 			log.Println(err)
 		}
 
-		client, err := client.NewClient(conn, conn.RemoteAddr().String(), s.Actions)
+		newClient, err := client.NewClient(conn, s.Actions, s.Response)
 		if err != nil {
 			log.Println(err)
 		}
+		go newClient.Read()
 
-		go client.Read()
 	}
 }

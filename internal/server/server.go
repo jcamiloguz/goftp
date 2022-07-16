@@ -21,11 +21,7 @@ type Server struct {
 	Channels map[int]*channel.Channel
 	Clients  map[string]*client.Client
 	Actions  chan *client.Action
-}
-
-type File struct {
-	Name string
-	Size int
+	Response chan *client.Action
 }
 
 func NewServer(config *Config) (*Server, error) {
@@ -44,6 +40,7 @@ func NewServer(config *Config) (*Server, error) {
 		Channels: channels,
 		Clients:  make(map[string]*client.Client),
 		Actions:  make(chan *client.Action),
+		Response: make(chan *client.Action),
 	}, nil
 }
 
@@ -65,19 +62,17 @@ func (s *Server) Start() {
 	fmt.Println("Server started")
 	for {
 		actionToExc := <-s.Actions
-		fmt.Println("Action: ", actionToExc.Id)
+		actionText := client.GetActionText(actionToExc.Id)
+		fmt.Println("Action: ", actionText)
 		switch actionToExc.Id {
 		case client.REG:
 			s.register(actionToExc.Client)
-
 		case client.OUT:
 			s.logout(actionToExc.Client)
-
 		case client.PUB:
-
 			fmt.Println("Args: ", actionToExc.Args)
-			channel := actionToExc.Args["channel"]
-			if channel == "" {
+			channelToPublish := actionToExc.Args["channel"]
+			if channelToPublish == "" {
 				actionToExc.Client.Connection.Write([]byte("ERR error channel is required\n"))
 				break
 			}
@@ -96,7 +91,8 @@ func (s *Server) Start() {
 				actionToExc.Client.Connection.Write([]byte("ERR error size is required\n"))
 				break
 			}
-			s.publish(actionToExc.Client, channel, &File{Name: fileName, Size: size})
+			file := channel.NewFile(fileName, size)
+			s.publish(actionToExc.Client, channelToPublish, file)
 
 		case client.SUB:
 			// log args
@@ -129,7 +125,7 @@ func (s *Server) register(newClient *client.Client) {
 
 func (s *Server) logout(clientToLogout *client.Client) {
 	if _, exists := s.Clients[clientToLogout.Id]; exists {
-		delete(s.Clients, clientToLogout.Username)
+		delete(s.Clients, clientToLogout.Id)
 		for _, channel := range s.Channels {
 			delete(channel.Clients, clientToLogout.Id)
 		}
@@ -164,7 +160,7 @@ func (s *Server) unsubscribe(clientToUnsubscribe *client.Client) {
 	}
 }
 
-func (s *Server) publish(publisher *client.Client, channel string, file *File) {
+func (s *Server) publish(publisher *client.Client, channel string, file *channel.File) {
 	channelId, err := strconv.Atoi(channel)
 	if err != nil {
 		fmt.Printf("error: %s\n", err.Error())
@@ -174,7 +170,11 @@ func (s *Server) publish(publisher *client.Client, channel string, file *File) {
 	if _, exists := s.Clients[publisher.Id]; exists {
 		if _, exists := s.Channels[channelId]; exists {
 			s.SendSuccesful(publisher)
-			s.Channels[channelId].Broadcast(publisher)
+			err := s.Channels[channelId].Broadcast(publisher, file)
+			if err != nil {
+				s.SendError(publisher, err)
+			}
+			s.SendSuccesful(publisher)
 		} else {
 			s.SendError(publisher, errors.New("error channel does not exist"))
 		}
@@ -183,11 +183,24 @@ func (s *Server) publish(publisher *client.Client, channel string, file *File) {
 	}
 }
 
-func (s *Server) SendSuccesful(client *client.Client) {
-	client.Connection.Write([]byte("OK\n"))
+func (s *Server) SendSuccesful(c *client.Client) {
+	okCmd := []byte("OK \n")
+	c.Connection.Write(okCmd)
+	okAction, err := client.NewAction(okCmd, c)
+	if err != nil {
+		fmt.Println(err)
+	}
+	c.Response <- okAction
 }
 
-func (s *Server) SendError(client *client.Client, err error) {
-	errorMsg := fmt.Sprintf("ERR error: %s\n", err.Error())
-	client.Connection.Write([]byte(errorMsg))
+func (s *Server) SendError(c *client.Client, err error) {
+
+	errorMsg := fmt.Sprintf("ERR msg=%s\n", err.Error())
+	errorCmd := []byte(errorMsg)
+	c.Connection.Write(errorCmd)
+	errorAction, err := client.NewAction(errorCmd, c)
+	if err != nil {
+		fmt.Println(err)
+	}
+	c.Response <- errorAction
 }
