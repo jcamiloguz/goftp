@@ -3,6 +3,8 @@ package channel
 import (
 	"errors"
 	"fmt"
+	"io"
+	"log"
 
 	"github.com/jcamiloguz/goftp/internal/client"
 )
@@ -45,35 +47,15 @@ func (c *Channel) Broadcast(publisher *client.Client, file *File) error {
 		fmt.Printf("sending fileheader to %s\n", client.Id)
 	}
 
-	for {
-		buf := make([]byte, 1024)
-		n, err := publisher.Connection.Read(buf)
+	for _, cl := range c.Clients {
+		conn := cl.Connection
+		n, err := io.Copy(conn, publisher.Connection)
 		if err != nil {
-			return err
+			log.Fatal(err)
 		}
-		fmt.Printf("read %d bytes from publisher\n", n)
-		action, err := client.NewAction(buf[:n], publisher)
-		if err == nil {
-			fmt.Printf("finish")
-			switch action.Id {
-			case client.OK:
-				c.broadcastSuccessful()
-				return nil
-			case client.ERR:
-				c.broadcastError(errors.New("error received file"))
-				return errors.New("error received file")
-			}
-		} else {
-			for _, cl := range c.Clients {
-				conn := cl.Connection
-				_, err := conn.Write(buf[:n])
-				if err != nil {
-					fmt.Printf("conn.write() method execution error, error is:% v \n", err)
-					break
-				}
-			}
-		}
+		fmt.Printf("copied %d bytes to %s\n", n, cl.Id)
 	}
+	return nil
 }
 
 /// broadcastSuccessful sends a message to all clients that the file was sent successfully
