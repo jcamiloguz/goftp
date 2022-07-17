@@ -175,6 +175,7 @@ func (s *Server) publish(publisher *client.Client, channel string, file *channel
 				s.SendError(publisher, err)
 			}
 			s.SendSuccesful(publisher)
+			s.CleanChannel(channelId)
 		} else {
 			s.SendError(publisher, errors.New("error channel does not exist"))
 		}
@@ -191,6 +192,18 @@ func (s *Server) SendSuccesful(c *client.Client) {
 		fmt.Println(err)
 	}
 	c.Response <- okAction
+}
+
+func (s *Server) CleanChannel(channelId int) {
+	for _, client := range s.Channels[channelId].Clients {
+		err := client.Connection.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+		// delete client
+		delete(s.Clients, client.Id)
+		delete(s.Channels[channelId].Clients, client.Id)
+	}
 }
 
 func (s *Server) SendError(c *client.Client, err error) {

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 
 	"github.com/jcamiloguz/goftp/internal/client"
 )
@@ -40,21 +39,21 @@ func (c *Channel) Broadcast(publisher *client.Client, file *File) error {
 	if publisher == nil {
 		return errors.New("publisher is required")
 	}
+	writers := make([]io.Writer, 0, len(c.Clients))
+	for _, client := range c.Clients {
+		writers = append(writers, client.Connection)
+	}
+	writer := io.MultiWriter(writers...)
 
 	fileHeader := fmt.Sprintf("INFO  fileName=%s size=%d", file.Name, file.Size)
-	for _, client := range c.Clients {
-		client.Connection.Write([]byte(fileHeader))
-		fmt.Printf("sending fileheader to %s\n", client.Id)
-	}
 
-	for _, cl := range c.Clients {
-		conn := cl.Connection
-		n, err := io.Copy(conn, publisher.Connection)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("copied %d bytes to %s\n", n, cl.Id)
+	_, err := writer.Write([]byte(fileHeader))
+	if err != nil {
+		return err
 	}
+	// create a MultiWriter to send the file to all clients
+
+	io.Copy(writer, publisher.Connection)
 	return nil
 }
 
