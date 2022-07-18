@@ -14,7 +14,7 @@ type Client struct {
 	Connection    net.Conn
 	StartConnTime time.Time
 	EndConnTime   time.Time
-	Action        chan *Action
+	Request       chan *Action
 	Response      chan *Action
 }
 
@@ -33,7 +33,7 @@ func NewClient(conn net.Conn, actions chan *Action, responses chan *Action) (*Cl
 		Id:            conn.RemoteAddr().String(),
 		Connection:    conn,
 		StartConnTime: time.Now(),
-		Action:        actions,
+		Request:       actions,
 		Response:      responses,
 	}, nil
 }
@@ -48,7 +48,7 @@ func (c *Client) Read() error {
 			if err != nil {
 				return err
 			}
-			c.Action <- outAction
+			c.Request <- outAction
 			return nil
 		}
 		if err != nil {
@@ -66,7 +66,7 @@ func (c *Client) Handle(message []byte) {
 		return
 	}
 
-	c.Action <- action
+	c.Request <- action
 	if action.Id == PUB {
 		//wait fot 2 responses: header and file
 		<-c.Response

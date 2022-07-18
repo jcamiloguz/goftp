@@ -46,7 +46,7 @@ func main() {
 			log.Println(err)
 		}
 
-		newClient, err := cl.NewClient(conn, s.Actions, s.Response)
+		newClient, err := cl.NewClient(conn, s.Requests, s.Response)
 		if err != nil {
 			log.Println(err)
 		}

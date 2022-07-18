@@ -20,7 +20,7 @@ type Server struct {
 	Config   *Config
 	Channels map[int]*ch.Channel
 	Clients  map[string]*cl.Client
-	Actions  chan *cl.Action
+	Requests chan *cl.Action
 	Response chan *cl.Action
 }
 
@@ -39,7 +39,7 @@ func NewServer(config *Config) (*Server, error) {
 		Config:   config,
 		Channels: channels,
 		Clients:  make(map[string]*cl.Client),
-		Actions:  make(chan *cl.Action),
+		Requests: make(chan *cl.Action),
 		Response: make(chan *cl.Action),
 	}, nil
 }
@@ -60,7 +60,7 @@ func CreateChannels(NChannels int) map[int]*ch.Channel {
 func (s *Server) Start() {
 	fmt.Println("Server started")
 	for {
-		actionToExc := <-s.Actions
+		actionToExc := <-s.Requests
 
 		isLogged := s.isLogged(actionToExc.Client)
 		if !isLogged && actionToExc.Id != cl.REG {

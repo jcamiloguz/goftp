@@ -41,8 +41,8 @@ func TestNewServer(t *testing.T) {
 			if len(server.Clients) != 0 {
 				t.Errorf("expected 0 clients, got %d", len(server.Clients))
 			}
-			if server.Actions == nil {
-				t.Errorf("expected nil, got %v", server.Actions)
+			if server.Requests == nil {
+				t.Errorf("expected nil, got %v", server.Requests)
 			}
 		}
 	}
