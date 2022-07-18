@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/jcamiloguz/goftp/internal/client"
+	cl "github.com/jcamiloguz/goftp/internal/client"
 )
 
 type Channel struct {
 	Id      int16
-	Clients map[string]*client.Client
+	Clients map[string]*cl.Client
 }
 type File struct {
 	Name string
@@ -37,11 +37,11 @@ func NewChannel(idChannel int) (*Channel, error) {
 
 	return &Channel{
 		Id:      int16(idChannel),
-		Clients: make(map[string]*client.Client),
+		Clients: make(map[string]*cl.Client),
 	}, nil
 }
 
-func (c *Channel) Broadcast(publisher *client.Client, file *File) error {
+func (c *Channel) Broadcast(publisher *cl.Client, file *File) error {
 	if publisher == nil {
 		return errors.New("publisher is required")
 	}
@@ -57,7 +57,7 @@ func (c *Channel) Broadcast(publisher *client.Client, file *File) error {
 	if err != nil {
 		return err
 	}
-	// create a MultiWriter to send the file to all clients
+
 	io.Copy(writer, publisher.Connection)
 	return nil
 }

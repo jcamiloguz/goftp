@@ -7,8 +7,8 @@ import (
 	"net"
 	"os"
 
-	"github.com/jcamiloguz/goftp/internal/client"
-	"github.com/jcamiloguz/goftp/internal/server"
+	cl "github.com/jcamiloguz/goftp/internal/client"
+	s "github.com/jcamiloguz/goftp/internal/server"
 	"github.com/joho/godotenv"
 )
 
@@ -24,7 +24,7 @@ func main() {
 	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
 
-	s, err := server.NewServer(&server.Config{
+	s, err := s.NewServer(&s.Config{
 		Host:      host,
 		Port:      port,
 		NChannels: 3,
@@ -46,7 +46,7 @@ func main() {
 			log.Println(err)
 		}
 
-		newClient, err := client.NewClient(conn, s.Actions, s.Response)
+		newClient, err := cl.NewClient(conn, s.Actions, s.Response)
 		if err != nil {
 			log.Println(err)
 		}

@@ -44,13 +44,16 @@ func (c *Client) Read() error {
 	for {
 		msg, err := bufio.NewReader(c.Connection).ReadBytes('\n')
 		if err == io.EOF {
+			outAction, err := NewAction([]byte("out"), c)
+			if err != nil {
+				return err
+			}
+			c.Action <- outAction
 			return nil
 		}
 		if err != nil {
 			return err
 		}
-
-		// fmt.Println(string(msg))
 		c.Handle(msg)
 	}
 
