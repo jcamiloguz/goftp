@@ -17,11 +17,17 @@ type File struct {
 	Size int
 }
 
-func NewFile(name string, size int) *File {
+func NewFile(name string, size int) (*File, error) {
+	if name == "" {
+		return nil, errors.New("name is required")
+	}
+	if size < 1 {
+		return nil, errors.New("size is required")
+	}
 	return &File{
 		Name: name,
 		Size: size,
-	}
+	}, nil
 }
 
 func NewChannel(idChannel int) (*Channel, error) {
@@ -52,20 +58,6 @@ func (c *Channel) Broadcast(publisher *client.Client, file *File) error {
 		return err
 	}
 	// create a MultiWriter to send the file to all clients
-
 	io.Copy(writer, publisher.Connection)
 	return nil
-}
-
-/// broadcastSuccessful sends a message to all clients that the file was sent successfully
-func (c *Channel) broadcastSuccessful() {
-	for _, client := range c.Clients {
-		client.Connection.Write([]byte("OK \n"))
-	}
-}
-
-func (c *Channel) broadcastError(err error) {
-	for _, client := range c.Clients {
-		client.Connection.Write([]byte(fmt.Sprintf("ERR msg=%s\n", err.Error())))
-	}
 }
