@@ -50,7 +50,6 @@ func (c *Channel) Broadcast(publisher *cl.Client, file *File) error {
 		writers = append(writers, client.Connection)
 	}
 	writer := io.MultiWriter(writers...)
-
 	fileHeader := fmt.Sprintf("INFO  fileName=%s size=%d", file.Name, file.Size)
 
 	_, err := writer.Write([]byte(fileHeader))

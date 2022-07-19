@@ -61,7 +61,6 @@ func (s *Server) Start() {
 	fmt.Println("Server started")
 	for {
 		actionToExc := <-s.Requests
-
 		isLogged := s.isLogged(actionToExc.Client)
 		if !isLogged && actionToExc.Id != cl.REG {
 			s.SendError(actionToExc.Client, errors.New("you are not logged"))
@@ -75,19 +74,18 @@ func (s *Server) Start() {
 			err := s.register(actionToExc.Client)
 			if err != nil {
 				s.SendError(actionToExc.Client, err)
-				break
+				continue
 			}
 			s.SendSuccesful(actionToExc.Client)
 
 		case cl.OUT:
 			s.logout(actionToExc.Client)
-			s.SendSuccesful(actionToExc.Client)
 
 		case cl.PUB:
 			err := s.publish(actionToExc.Client, actionToExc.Args)
 			if err != nil {
 				s.SendError(actionToExc.Client, err)
-				break
+				continue
 			}
 			s.SendSuccesful(actionToExc.Client)
 
@@ -95,7 +93,7 @@ func (s *Server) Start() {
 			err := s.subscribe(actionToExc.Client, actionToExc.Args)
 			if err != nil {
 				s.SendError(actionToExc.Client, err)
-				break
+				continue
 			}
 			s.SendSuccesful(actionToExc.Client)
 
@@ -104,9 +102,7 @@ func (s *Server) Start() {
 			s.SendSuccesful(actionToExc.Client)
 
 		case cl.ERR:
-			//log error
 			fmt.Println("Error: ", actionToExc.Args["msg"])
-
 		}
 	}
 
@@ -172,7 +168,7 @@ func (s *Server) publish(publisher *cl.Client, args map[string]string) error {
 	}
 	file, err := ch.NewFile(fileName, size)
 	if err != nil {
-		s.SendError(publisher, err)
+		return err
 	}
 	channelId, err := strconv.Atoi(channelToPublish)
 	if err != nil {

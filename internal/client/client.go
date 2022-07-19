@@ -54,17 +54,22 @@ func (c *Client) Read() error {
 		if err != nil {
 			return err
 		}
-		c.Handle(msg)
+		fmt.Printf("message: %s\n", msg)
+		err = c.Handle(msg)
+		if err != nil {
+			return err
+		}
 	}
 
 }
 
-func (c *Client) Handle(message []byte) {
+func (c *Client) Handle(message []byte) error {
 	action, err := NewAction(message, c)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		return
+		fmt.Printf("handle err")
+		return err
 	}
+	fmt.Printf("action: %v\n", action.Id)
 
 	c.Request <- action
 	if action.Id == PUB {
@@ -74,5 +79,5 @@ func (c *Client) Handle(message []byte) {
 	}
 
 	<-c.Response
-
+	return nil
 }

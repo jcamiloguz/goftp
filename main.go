@@ -50,7 +50,13 @@ func main() {
 		if err != nil {
 			log.Println(err)
 		}
-		go newClient.Read()
+
+		go func() {
+			err := newClient.Read()
+			if err != nil {
+				log.Println(err)
+			}
+		}()
 
 	}
 }
