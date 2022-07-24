@@ -178,7 +178,6 @@ func (s *Server) publish(publisher *cl.Client, args map[string]string) error {
 	if _, exists := s.Channels[channelId]; exists {
 		err := s.Channels[channelId].Broadcast(publisher, file)
 		if err != nil {
-
 			return errors.New("error publishing file")
 		}
 

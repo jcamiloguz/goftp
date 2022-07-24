@@ -61,19 +61,24 @@ func (c *Channel) Broadcast(publisher *cl.Client, file *File) error {
 	for {
 		_, err := publisher.Connection.Read(buff)
 		if err != nil {
-			return err
+
+			errMsg := fmt.Sprintf("error reading connection from publisher -- %s", err.Error())
+			return errors.New(errMsg)
 		}
 		// get action form publisher
 		action, err := cl.NewAction(buff, publisher)
 		if err != nil {
-			return err
+			errMsg := fmt.Sprintf("error geting action from publisher except a File/ok action -- %s", err.Error())
+			return errors.New(errMsg)
+
 		}
 		fmt.Printf("%d\n", action.Id)
 		if action.Id == cl.FILE {
 			n, err := writer.Write(buff)
 			fmt.Printf("%d\n", n)
 			if err != nil {
-				return err
+				errMsg := fmt.Sprintf("error writing file -- %s", err.Error())
+				return errors.New(errMsg)
 			}
 			continue
 		}
@@ -81,7 +86,8 @@ func (c *Channel) Broadcast(publisher *cl.Client, file *File) error {
 		if action.Id == cl.OK {
 			_, err := writer.Write(buff)
 			if err != nil {
-				return err
+				errMsg := fmt.Sprintf("error sending ok final confirmation  -- %s", err.Error())
+				return errors.New(errMsg)
 			}
 			break
 		}
