@@ -54,7 +54,7 @@ func main() {
 		go func() {
 			err := newClient.Read()
 			if err != nil {
-				log.Println(err)
+				log.Println("Error Reading request: ", err.Error())
 			}
 		}()
 

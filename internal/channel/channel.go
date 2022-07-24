@@ -45,18 +45,46 @@ func (c *Channel) Broadcast(publisher *cl.Client, file *File) error {
 	if publisher == nil {
 		return errors.New("publisher is required")
 	}
+
 	writers := make([]io.Writer, 0, len(c.Clients))
 	for _, client := range c.Clients {
 		writers = append(writers, client.Connection)
 	}
 	writer := io.MultiWriter(writers...)
-	fileHeader := fmt.Sprintf("INFO  fileName=%s size=%d", file.Name, file.Size)
+	fileHeader := fmt.Sprintf("publish  fileName=%s size=%d", file.Name, file.Size)
 
 	_, err := writer.Write([]byte(fileHeader))
 	if err != nil {
 		return err
 	}
+	buff := make([]byte, 1024)
+	for {
+		_, err := publisher.Connection.Read(buff)
+		if err != nil {
+			return err
+		}
+		// get action form publisher
+		action, err := cl.NewAction(buff, publisher)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%d\n", action.Id)
+		if action.Id == cl.FILE {
+			n, err := writer.Write(buff)
+			fmt.Printf("%d\n", n)
+			if err != nil {
+				return err
+			}
+			continue
+		}
 
-	io.Copy(writer, publisher.Connection)
+		if action.Id == cl.OK {
+			_, err := writer.Write(buff)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
 	return nil
 }

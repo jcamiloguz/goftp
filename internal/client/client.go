@@ -66,18 +66,16 @@ func (c *Client) Read() error {
 func (c *Client) Handle(message []byte) error {
 	action, err := NewAction(message, c)
 	if err != nil {
-		fmt.Printf("handle err")
+		fmt.Printf("handle err: ")
 		return err
 	}
 	fmt.Printf("action: %v\n", action.Id)
 
 	c.Request <- action
-	if action.Id == PUB {
-		//wait fot 2 responses: header and file
-		<-c.Response
-		<-c.Response
-	}
 
-	<-c.Response
+	response := <-c.Response
+	if response.Id == ERR {
+		return errors.New(response.Args["msg"])
+	}
 	return nil
 }

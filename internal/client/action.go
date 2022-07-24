@@ -12,18 +12,19 @@ const (
 	REG ACTIONID = iota
 	OUT
 	PUB
+	FILE
 	SUB
 	UNSUB
-	INFO
 	OK
 	ERR
 )
 
 type Action struct {
-	Id      ACTIONID
-	Client  *Client
-	Args    map[string]string
-	Payload []byte
+	Id            ACTIONID
+	Client        *Client
+	Args          map[string]string
+	Payload       []byte
+	PayloadLength int
 }
 
 func NewAction(message []byte, client *Client) (*Action, error) {
@@ -31,6 +32,7 @@ func NewAction(message []byte, client *Client) (*Action, error) {
 
 	// get args from message and convert to map
 	args := make(map[string]string)
+	actionId, err := GetActionId(string(cmd))
 	for _, arg := range bytes.Split(message, []byte(" "))[1:] {
 		if bytes.Contains(arg, []byte("=")) {
 			key := bytes.Split(arg, []byte("="))[0]
@@ -39,17 +41,24 @@ func NewAction(message []byte, client *Client) (*Action, error) {
 			args[string(key)] = string(value)
 		}
 	}
-	payload := bytes.TrimSpace(bytes.Split(message, []byte(" "))[len(bytes.Split(message, []byte(" ")))-1])
-	actionId, err := GetActionId(string(cmd))
+	var payload []byte
+	if actionId == FILE {
+		content := bytes.Split(message, []byte(" "))[1:]
+		payload = bytes.Join(content, []byte(" "))
+	} else {
+		payload = nil
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
 	return &Action{
-		Id:      actionId,
-		Client:  client,
-		Args:    args,
-		Payload: payload,
+		Id:            actionId,
+		Client:        client,
+		Args:          args,
+		Payload:       payload,
+		PayloadLength: len(payload),
 	}, nil
 }
 
@@ -62,6 +71,8 @@ func GetActionId(action string) (ACTIONID, error) {
 		return OUT, nil
 	case "publish":
 		return PUB, nil
+	case "file":
+		return FILE, nil
 	case "subscribe":
 		return SUB, nil
 	case "unsubscribe":
@@ -86,8 +97,8 @@ func GetActionText(action ACTIONID) string {
 		return "subscribe"
 	case UNSUB:
 		return "unsubscribe"
-	case INFO:
-		return "info"
+	case FILE:
+		return "file"
 	case OK:
 		return "ok"
 	case ERR:

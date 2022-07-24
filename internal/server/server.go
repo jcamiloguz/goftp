@@ -176,53 +176,15 @@ func (s *Server) publish(publisher *cl.Client, args map[string]string) error {
 	}
 
 	if _, exists := s.Channels[channelId]; exists {
-		s.SendSuccesful(publisher)
 		err := s.Channels[channelId].Broadcast(publisher, file)
 		if err != nil {
-			return err
+
+			return errors.New("error publishing file")
 		}
-		s.CleanChannel(channelId)
+
 	} else {
 		return errors.New("error channel does not exist")
 	}
 
 	return nil
-}
-
-func (s *Server) SendSuccesful(c *cl.Client) {
-	okCmd := []byte("OK \n")
-	c.Connection.Write(okCmd)
-	okAction, err := cl.NewAction(okCmd, c)
-	if err != nil {
-		fmt.Println(err)
-	}
-	c.Response <- okAction
-}
-
-func (s *Server) CleanChannel(channelId int) {
-	for _, client := range s.Channels[channelId].Clients {
-		err := client.Connection.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
-		delete(s.Clients, client.Id)
-		delete(s.Channels[channelId].Clients, client.Id)
-	}
-}
-
-func (s *Server) SendError(c *cl.Client, err error) {
-	errorMsg := fmt.Sprintf("ERR msg=%s\n", err.Error())
-	errorCmd := []byte(errorMsg)
-	c.Connection.Write(errorCmd)
-	errorAction, err := cl.NewAction(errorCmd, c)
-	if err != nil {
-		fmt.Println(err)
-	}
-	c.Response <- errorAction
-}
-func (s *Server) isLogged(c *cl.Client) bool {
-	if _, exists := s.Clients[c.Id]; exists {
-		return true
-	}
-	return false
 }
