@@ -3,7 +3,7 @@ package channel_test
 import (
 	"testing"
 
-	"github.com/jcamiloguz/goftp/internal/channel"
+	ch "github.com/jcamiloguz/goftp/internal/channel"
 )
 
 func TestNewChannel(t *testing.T) {
@@ -17,7 +17,7 @@ func TestNewChannel(t *testing.T) {
 
 	// Run test cases
 	for _, table := range tables {
-		_, err := channel.NewChannel(table.idChannel)
+		_, err := ch.NewChannel(table.idChannel)
 		if table.idChannel < 1 {
 			if err == nil {
 				t.Errorf("expected error, got nil")
@@ -44,7 +44,7 @@ func TestNewFile(t *testing.T) {
 
 	// Run test cases
 	for _, table := range tables {
-		_, err := channel.NewFile(table.name, table.size)
+		_, err := ch.NewFile(table.name, table.size)
 		if table.name == "" || table.size < 1 {
 			if err == nil {
 				t.Errorf("expected error, got nil")
@@ -55,5 +55,21 @@ func TestNewFile(t *testing.T) {
 			}
 		}
 	}
-
 }
+
+// func TestBroadcast(t *testing.T) {
+// 	chann:= ch.NewChannel(0)
+// 	_,publisherConn := net.Pipe()
+// 	publisher := cl.NewClient( )
+// 	fileTestContent := []byte("test")
+// 	// Test cases
+// 	tables:=[]struct {
+// 		nSubscribers int
+// 		file 			 *ch.File
+// 	}{
+
+// 	}
+
+// 	}
+
+// }

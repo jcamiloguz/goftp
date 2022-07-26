@@ -16,18 +16,29 @@ var (
 	nChannels = flag.Int("nchannels", 3, "Number of channels")
 )
 
+func getEnv() string {
+	return os.Getenv("APP_ENV")
+}
+
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	env := getEnv()
+	if env == "development" {
+
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
+	flag.Parse()
+
 	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
 
+	fmt.Printf("nChannels: %d\n", *nChannels)
 	s, err := s.NewServer(&s.Config{
 		Host:      host,
 		Port:      port,
-		NChannels: 3,
+		NChannels: *nChannels,
 	})
 	if err != nil {
 		log.Fatal(err)

@@ -1,5 +1,7 @@
 # Go File Transfer Protocol (GOFTP)
 
+This project is a TCP server to transfer file using a custom Protocol
+
 ## Actions
 
 | Action      | Description                                          | Parameters                | Sender        |
@@ -10,7 +12,7 @@
 | FILE        | Action to send file content                          | Content                   | Client/Server |
 | SUB         | Action for subscribe to a specific channel           | Channel                   | Client        |
 | UNSUB       | Action for unsubscribe to a specific channel         |                           | Client        |
-| OK          |                                                      |                           | Client/Server |
-| ERR         | Action for unsubscribe to a specific channel         |                           | Client/Server |
+| OK          | Success confirmation                                 |                           | Client/Server |
+| ERR         | Error notification                                   |                           | Client/Server |
 
 ### References
