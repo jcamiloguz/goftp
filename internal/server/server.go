@@ -58,25 +58,30 @@ func CreateChannels(NChannels int) map[int]*ch.Channel {
 }
 
 func (s *Server) Start() {
-	fmt.Println("Server started")
+
+	fmt.Printf("GOFTP Server started on %s:%s\n", s.Config.Host, s.Config.Port)
+	fmt.Printf("Number of channels: %d\n", len(s.Channels))
 	for {
+
 		actionToExc := <-s.Requests
+
 		isLogged := s.isLogged(actionToExc.Client)
 		if !isLogged && actionToExc.Id != cl.REG {
-			s.SendError(actionToExc.Client, errors.New("you are not logged"))
+			actionToExc.Client.SendError(errors.New("you are not logged"))
 		}
+
 		actionText := cl.GetActionText(actionToExc.Id)
-		fmt.Println("Action: ", actionText)
+		fmt.Printf("%s:%s\n", actionToExc.Client.Id, actionText)
 
 		switch actionToExc.Id {
 
 		case cl.REG:
 			err := s.register(actionToExc.Client)
 			if err != nil {
-				s.SendError(actionToExc.Client, err)
+				actionToExc.Client.SendError(err)
 				continue
 			}
-			s.SendSuccesful(actionToExc.Client)
+			actionToExc.Client.SendSuccesful()
 
 		case cl.OUT:
 			s.logout(actionToExc.Client)
@@ -84,22 +89,22 @@ func (s *Server) Start() {
 		case cl.PUB:
 			err := s.publish(actionToExc.Client, actionToExc.Args)
 			if err != nil {
-				s.SendError(actionToExc.Client, err)
+				actionToExc.Client.SendError(err)
 				continue
 			}
-			s.SendSuccesful(actionToExc.Client)
+			actionToExc.Client.SendSuccesful()
 
 		case cl.SUB:
 			err := s.subscribe(actionToExc.Client, actionToExc.Args)
 			if err != nil {
-				s.SendError(actionToExc.Client, err)
+				actionToExc.Client.SendError(err)
 				continue
 			}
-			s.SendSuccesful(actionToExc.Client)
+			actionToExc.Client.SendSuccesful()
 
 		case cl.UNSUB:
 			s.unsubscribe(actionToExc.Client)
-			s.SendSuccesful(actionToExc.Client)
+			actionToExc.Client.SendSuccesful()
 
 		case cl.ERR:
 			fmt.Println("Error: ", actionToExc.Args["msg"])
@@ -119,7 +124,9 @@ func (s *Server) register(newClient *cl.Client) error {
 func (s *Server) logout(clientToLogout *cl.Client) {
 	delete(s.Clients, clientToLogout.Id)
 	for _, channel := range s.Channels {
-		delete(channel.Clients, clientToLogout.Id)
+		if _, exists := channel.Clients[clientToLogout.Id]; exists {
+			channel.RemoveClient(clientToLogout)
+		}
 	}
 }
 
@@ -135,7 +142,7 @@ func (s *Server) subscribe(clientToSubscribe *cl.Client, args map[string]string)
 	}
 
 	if _, exists := s.Channels[channelId]; exists {
-		s.Channels[channelId].Clients[clientToSubscribe.Id] = clientToSubscribe
+		s.Channels[channelId].AddClient(clientToSubscribe)
 	} else {
 		return errors.New("channel does not exist")
 	}
@@ -144,7 +151,10 @@ func (s *Server) subscribe(clientToSubscribe *cl.Client, args map[string]string)
 
 func (s *Server) unsubscribe(clientToUnsubscribe *cl.Client) {
 	for _, channel := range s.Channels {
-		delete(channel.Clients, clientToUnsubscribe.Id)
+		if _, exists := channel.Clients[clientToUnsubscribe.Id]; exists {
+			channel.RemoveClient(clientToUnsubscribe)
+		}
+
 	}
 
 }
@@ -178,7 +188,7 @@ func (s *Server) publish(publisher *cl.Client, args map[string]string) error {
 	if _, exists := s.Channels[channelId]; exists {
 		err := s.Channels[channelId].Broadcast(publisher, file)
 		if err != nil {
-			return errors.New("error publishing file")
+			return errors.New("error publishing file:" + err.Error())
 		}
 
 	} else {

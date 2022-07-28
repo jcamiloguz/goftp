@@ -4,7 +4,7 @@
 - [x] Define design pattern(Observer)
 - [x] Develop basic Tcp server
 - [x] Response Cycle
-- [ ] Send file Tcp server
+- [x] Send file Tcp server
 - [x] Define file manage: Use ¿Buffer, mutiple channels, Waitgroups, Workers, Queue?
 - [x] Develop CLI client: Use CLI Basic, interative and direct mode
 - [ ] Add http using sockets to send info to report, Define ¿JSON, server must to heard Json changes to send via socket to report?

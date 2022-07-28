@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -63,23 +64,23 @@ func NewAction(message []byte, client *Client) (*Action, error) {
 }
 
 func GetActionId(action string) (ACTIONID, error) {
-	action = strings.ToLower(action)
+	action = strings.ToUpper(action)
 	switch action {
-	case "register":
+	case "REG":
 		return REG, nil
-	case "out":
+	case "OUT":
 		return OUT, nil
-	case "publish":
+	case "PUB":
 		return PUB, nil
-	case "file":
+	case "FILE":
 		return FILE, nil
-	case "subscribe":
+	case "SUB":
 		return SUB, nil
-	case "unsubscribe":
+	case "UNSUB":
 		return UNSUB, nil
-	case "ok":
+	case "OK":
 		return OK, nil
-	case "error":
+	case "ERR":
 		return ERR, nil
 	default:
 		return ERR, errors.New("unknown action")
@@ -106,4 +107,32 @@ func GetActionText(action ACTIONID) string {
 	default:
 		return "unknown action"
 	}
+}
+
+func (c *Client) SendSuccesful() {
+	okCmd := []byte("OK \n")
+	c.Connection.Write(okCmd)
+	okAction, err := NewAction(okCmd, c)
+	if err != nil {
+		fmt.Println(err)
+	}
+	c.Response <- okAction
+}
+
+func (c *Client) SendError(err error) {
+	errMsg := strings.Replace(err.Error(), " ", "_", -1)
+	errorMsg := fmt.Sprintf("ERR msg=\"%s\"\n", errMsg)
+	errorCmd := []byte(errorMsg)
+	c.Connection.Write(errorCmd)
+	errorAction, err := NewAction(errorCmd, c)
+	if err != nil {
+		fmt.Println(err)
+	}
+	c.Response <- errorAction
+}
+
+func (c *Client) SendPublishFileHeader(fileName string, size int) {
+	fileHeader := fmt.Sprintf("PUB  fileName=%s size=%d ", fileName, size)
+	fileHeaderCmd := []byte(fileHeader)
+	c.Connection.Write(fileHeaderCmd)
 }
