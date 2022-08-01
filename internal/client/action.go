@@ -42,6 +42,7 @@ func NewAction(message []byte, client *Client) (*Action, error) {
 			args[string(key)] = string(value)
 		}
 	}
+
 	var payload []byte
 	if actionId == FILE {
 		content := bytes.Split(message, []byte(" "))[1:]

@@ -31,7 +31,6 @@ func TestNewChannel(t *testing.T) {
 }
 
 func TestNewFile(t *testing.T) {
-
 	// Test cases
 	tables := []struct {
 		name string
@@ -56,20 +55,3 @@ func TestNewFile(t *testing.T) {
 		}
 	}
 }
-
-// func TestBroadcast(t *testing.T) {
-// 	chann:= ch.NewChannel(0)
-// 	_,publisherConn := net.Pipe()
-// 	publisher := cl.NewClient( )
-// 	fileTestContent := []byte("test")
-// 	// Test cases
-// 	tables:=[]struct {
-// 		nSubscribers int
-// 		file 			 *ch.File
-// 	}{
-
-// 	}
-
-// 	}
-
-// }
