@@ -1,4 +1,4 @@
-FROM golang:alpine AS build
+FROM golang:alpine AS server-build
 WORKDIR /build
 ENV CGO_ENABLED=0
 ENV GO_VERSION=1.18.1
@@ -12,5 +12,7 @@ COPY . .
 RUN go build -o /goftp main.go
 
 FROM scratch
-COPY --from=build goftp /goftp
+COPY --from=server-build goftp /goftp
+ENV HOST=0.0.0.0
+ENV PORT=3090
 ENTRYPOINT ["/goftp"]

@@ -9,6 +9,7 @@ import (
 
 	cl "github.com/jcamiloguz/goftp/internal/client"
 	s "github.com/jcamiloguz/goftp/internal/server"
+	"github.com/jcamiloguz/goftp/internal/web"
 	"github.com/joho/godotenv"
 )
 
@@ -50,6 +51,7 @@ func main() {
 
 	defer listener.Close()
 	go s.Start()
+	go web.Start()
 
 	for {
 		conn, err := listener.Accept()
