@@ -1,11 +1,96 @@
 package web
 
-import "net/http"
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
+)
+
+var (
+	wsUpgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+
+	wsConn *websocket.Conn
+)
+
+type spaHandler struct {
+	staticPath string
+	indexPath  string
+}
+
+func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	path, err := filepath.Abs(r.URL.Path)
+	if err != nil {
+
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	path = filepath.Join(h.staticPath, path)
+
+	_, err = os.Stat(path)
+	if os.IsNotExist(err) {
+
+		http.ServeFile(w, r, filepath.Join(h.staticPath, h.indexPath))
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
+}
 
 func Start() {
 	// return index.html
-	fs := http.FileServer(http.Dir("./static"))
-	http.Handle("/", fs)
+	router := mux.NewRouter()
+	router.HandleFunc("/socket", WsEndpoint)
 
-	http.ListenAndServe("0.0.0.0:8080", nil)
+	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
+	router.PathPrefix("/").Handler(spa)
+
+	srv := &http.Server{
+		Handler: router,
+		Addr:    "0.0.0.0:8080",
+		// Good practice: enforce timeouts for servers you create!
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+	log.Fatal(srv.ListenAndServe())
+
+}
+
+func WsEndpoint(w http.ResponseWriter, r *http.Request) {
+	wsUpgrader.CheckOrigin = func(req *http.Request) bool {
+		if req.Header.Get("Origin") != "http://"+req.Host {
+			fmt.Printf("Origin %s is not allowed\n %s \n", req.Header.Get("Origin"), req.Host)
+			http.Error(w, "Origin not allowed", http.StatusForbidden)
+			return false
+		}
+		return true
+	}
+	var err error
+	wsConn, err = wsUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Printf("could not upgrade: %s\n", err.Error())
+		return
+	}
+
+	defer wsConn.Close()
+
+	// event loop
+	for {
+		err := wsConn.WriteMessage(websocket.TextMessage, []byte("hello"))
+		if err != nil {
+			fmt.Printf("error sending message: %s\n", err.Error())
+		}
+	}
 }
