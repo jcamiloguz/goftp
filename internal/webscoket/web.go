@@ -1,6 +1,7 @@
-package web
+package webscoket
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+	"github.com/jcamiloguz/goftp/internal/model"
 )
 
 var (
@@ -24,6 +26,29 @@ var (
 type spaHandler struct {
 	staticPath string
 	indexPath  string
+}
+type wsHandler struct {
+	listener chan *model.Payload
+	caller   chan any
+}
+
+func Start(listener chan *model.Payload, caller chan any) {
+
+	router := mux.NewRouter()
+	ws := wsHandler{listener, caller}
+	router.PathPrefix("/socket").Handler(ws)
+
+	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
+	router.PathPrefix("/").Handler(spa)
+
+	srv := &http.Server{
+		Handler:      router,
+		Addr:         "0.0.0.0:8080",
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+	log.Fatal(srv.ListenAndServe())
+
 }
 
 func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -49,26 +74,7 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
 }
 
-func Start() {
-	// return index.html
-	router := mux.NewRouter()
-	router.HandleFunc("/socket", WsEndpoint)
-
-	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
-	router.PathPrefix("/").Handler(spa)
-
-	srv := &http.Server{
-		Handler: router,
-		Addr:    "0.0.0.0:8080",
-		// Good practice: enforce timeouts for servers you create!
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
-	log.Fatal(srv.ListenAndServe())
-
-}
-
-func WsEndpoint(w http.ResponseWriter, r *http.Request) {
+func (ws wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	wsUpgrader.CheckOrigin = func(req *http.Request) bool {
 		if req.Header.Get("Origin") != "http://"+req.Host {
 			fmt.Printf("Origin %s is not allowed\n %s \n", req.Header.Get("Origin"), req.Host)
@@ -86,11 +92,22 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	defer wsConn.Close()
 
-	// event loop
+	// Refactor call to payload
+	ws.caller <- wsConn
+
 	for {
-		err := wsConn.WriteMessage(websocket.TextMessage, []byte("hello"))
+		payload := <-ws.listener
+		// payload  marshal to json
+		payloadJson, err := json.Marshal(payload)
 		if err != nil {
-			fmt.Printf("error sending message: %s\n", err.Error())
+			fmt.Printf("could not marshal: %s\n", err.Error())
+			return
 		}
+		err = wsConn.WriteMessage(websocket.TextMessage, payloadJson)
+		if err != nil {
+			fmt.Printf("could not write: %s\n", err.Error())
+			return
+		}
+
 	}
 }

@@ -9,7 +9,7 @@ import (
 
 	cl "github.com/jcamiloguz/goftp/internal/client"
 	s "github.com/jcamiloguz/goftp/internal/server"
-	"github.com/jcamiloguz/goftp/internal/web"
+	"github.com/jcamiloguz/goftp/internal/webscoket"
 	"github.com/joho/godotenv"
 )
 
@@ -51,7 +51,7 @@ func main() {
 
 	defer listener.Close()
 	go s.Start()
-	go web.Start()
+	go webscoket.Start(s.Outbound, s.Inbound)
 
 	for {
 		conn, err := listener.Accept()
