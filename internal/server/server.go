@@ -127,6 +127,8 @@ func (s *Server) logout(clientToLogout *cl.Client) {
 	for _, channel := range s.Channels {
 		if _, exists := channel.Clients[clientToLogout.Id]; exists {
 			channel.RemoveClient(clientToLogout)
+			s.Payload.RemoveSubscriber(channel.Id, clientToLogout.Id)
+			s.Outbound <- s.Payload
 		}
 	}
 }
