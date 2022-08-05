@@ -13,7 +13,6 @@ import LogoGoftp from './icons/LogoGoftp.vue'
       <nav class="header__nav">
         <ul class="header__nav-list">
           <li class="header__nav-item">Overview</li>
-          <li class="header__nav-item">Channels</li>
         </ul>
       </nav>
     </div>

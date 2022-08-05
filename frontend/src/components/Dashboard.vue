@@ -39,40 +39,54 @@ socket.onclose = () => {
   }
 }
 
-watch(
-  () => data.channels,
-  (newChannels) => {
-    data.fileCount = newChannels.reduce(
+const formatPayload = (rawPayload) => {
+  return new Promise((resolve, reject) => {
+    const formatPayload = {}
+    formatPayload.fileCount = rawPayload.reduce(
       (acc, channel) => acc + channel.files.length,
       0
     )
     const totalSize =
-      newChannels.reduce(
+      rawPayload.reduce(
         (acc, channel) =>
           acc + channel.files.reduce((acc, file) => acc + file.size, 0),
         0
       ) + ''
-    data.totalSubscribers =
-      newChannels.reduce(
-        (acc, channel) => acc + channel.subscribers.length,
-        0
-      ) + ''
+    formatPayload.totalSubscribers =
+      rawPayload.reduce((acc, channel) => acc + channel.subscribers.length, 0) +
+      ''
     const totalSizeKB = totalSize / 1024
     const totalSizeMB = totalSizeKB / 1024
     const totalSizeGB = totalSizeMB / 1024
     if (totalSizeGB > 1) {
-      data.fileSize = `${totalSizeGB.toFixed(2)} MB`
+      formatPayload.fileSize = `${totalSizeGB.toFixed(2)} MB`
       return
     }
     if (totalSizeMB > 1) {
-      data.fileSize = `${totalSizeMB.toFixed(2)} KB`
+      formatPayload.fileSize = `${totalSizeMB.toFixed(2)} KB`
       return
     }
     if (totalSizeKB > 1) {
-      data.fileSize = `${totalSizeKB.toFixed(2)} KB`
+      formatPayload.fileSize = `${totalSizeKB.toFixed(2)} KB`
       return
     }
-    data.fileSize = `${totalSize} bytes`
+    formatPayload.fileSize = `${totalSize} bytes`
+    resolve(formatPayload)
+  })
+}
+
+watch(
+  () => data.channels,
+  async (newChannels) => {
+    try {
+      await formatPayload(newChannels)
+    } catch (e) {
+      console.log(e)
+      data.error = {
+        title: 'Error',
+        message: 'Data integrity error'
+      }
+    }
   }
 )
 </script>
