@@ -79,7 +79,12 @@ watch(
   () => data.channels,
   async (newChannels) => {
     try {
-      await formatPayload(newChannels)
+      const { fileSize, totalSubscribers, fileCount } = await formatPayload(
+        newChannels
+      )
+      data.fileCount = fileCount
+      data.fileSize = fileSize
+      data.totalSubscribers = totalSubscribers
     } catch (e) {
       console.log(e)
       data.error = {
