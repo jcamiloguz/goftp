@@ -65,6 +65,7 @@ func (s *Server) Start() {
 			isLogged := s.isLogged(actionToExc.Client)
 			if !isLogged && actionToExc.Id != cl.REG {
 				actionToExc.Client.SendError(errors.New("you are not logged"))
+				continue
 			}
 
 			actionText := cl.GetActionText(actionToExc.Id)

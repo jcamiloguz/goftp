@@ -57,11 +57,13 @@ func main() {
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Println(err)
+			continue
 		}
 
 		newClient, err := cl.NewClient(conn, s.Requests, s.Response)
 		if err != nil {
 			log.Println(err)
+			continue
 		}
 
 		go func() {

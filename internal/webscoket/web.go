@@ -76,7 +76,11 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (ws wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	wsUpgrader.CheckOrigin = func(req *http.Request) bool {
-		if req.Header.Get("Origin") != "http://"+req.Host && os.Getenv("APP_ENV") != "development" {
+		env := os.Getenv("APP_ENV")
+		if env == "development" {
+			return true
+		}
+		if req.Header.Get("Origin") != "http://"+req.Host {
 			fmt.Printf("Origin %s is not allowed\n %s \n", req.Header.Get("Origin"), req.Host)
 			http.Error(w, "Origin not allowed", http.StatusForbidden)
 			return false
@@ -97,7 +101,6 @@ func (ws wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		payload := <-ws.listener
-		// payload  marshal to json
 		payloadJson, err := json.Marshal(payload)
 		if err != nil {
 			fmt.Printf("could not marshal: %s\n", err.Error())

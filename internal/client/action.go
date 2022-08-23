@@ -36,8 +36,9 @@ func NewAction(message []byte, client *Client) (*Action, error) {
 	actionId, err := GetActionId(string(cmd))
 	for _, arg := range bytes.Split(message, []byte(" "))[1:] {
 		if bytes.Contains(arg, []byte("=")) {
-			key := bytes.Split(arg, []byte("="))[0]
-			value := bytes.Split(arg, []byte("="))[1]
+			cmdQuery := bytes.Split(arg, []byte("="))
+			key := cmdQuery[0]
+			value := cmdQuery[1]
 			value = bytes.TrimSpace(value)
 			args[string(key)] = string(value)
 		}
